@@ -7,10 +7,8 @@ use Swoft\Bean\Annotation\ServerListener;
 use Swoft\Bean\Annotation\Value;
 use Swoft\Bootstrap\Listeners\Interfaces\WorkerStartInterface;
 use Swoft\Bootstrap\SwooleEvent;
-use Swoft\Bootstrap\Server\AbstractServer;
 use Swoft\Devtool\DevTool;
 use Swoft\Devtool\WebSocket\DevToolController;
-use Swoft\Memory\Table;
 use Swoole\Server;
 
 /**
@@ -52,5 +50,7 @@ class ServerStartListener implements WorkerStartInterface
             /* @see \Swoft\WebSocket\Server\Router\HandlerMapping::add() */
             \bean('wsRouter')->add(DevTool::ROUTE_PREFIX, DevToolController::class);
         }
+
+        App::setAlias('@devtool', \dirname(__DIR__, 2));
     }
 }

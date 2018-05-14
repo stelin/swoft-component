@@ -301,8 +301,8 @@ class GenCommand
      *   --instance STRING          Specify database instance, default is: <info>default</info>
      *   --table-prefix STRING      Specify the table prefix that needs to be removed, default is: <info>empty</info>
      *   --field-prefix STRING      Specify the field prefix that needs to be removed, default is: <info>empty</info>
-     *   --tpl-file STRING          The template file name. default is: <info>entity.stub</info>
      *   --tpl-dir STRING           The template file dir path.(default: devtool/res/templates)
+     *   --force-default            Force to set default value by the defult of column or type
      * @Example
      *   <info>{fullCommand} -d test</info>     Gen DemoProcess class to `@app/Models/Entity`
      *
@@ -330,13 +330,13 @@ class GenCommand
         $instance = $input->getOpt('instance', '');
         $tablePrefix = $input->getOpt('table-prefix', '');
         $fieldPrefix = $input->getOpt('field-prefix', '');
-        $tplFile = $input->getOpt('tpl-file', EntityLogic::DEFAULT_TPL_FILE);
         $tplDir = $input->getOpt('tpl-dir', $this->defaultTplPath);
+        $isForce = $input->hasOpt('force-default');
 
 
         /* @var EntityLogic $logic */
         $logic = bean(EntityLogic::class);
-        $logic->generate([$db, $inc, $exc, $path, $namespace, $driver, $instance, $tablePrefix, $fieldPrefix, $tplFile, $tplDir]);
+        $logic->generate([$db, $inc, $exc, $path, $namespace, $driver, $instance, $tablePrefix, $fieldPrefix, $tplDir, $isForce]);
     }
 
     /**

@@ -30,9 +30,24 @@ class EntityLogic
     const DEFAULT_DRIVER = 'mysql';
 
     /**
-     * Default tpl file
+     * Default entity tpl file
      */
-    const DEFAULT_TPL_FILE = 'entity.stub';
+    const DEFAULT_TPL_ENTITY_FILE = 'entity';
+
+    /**
+     * Default property tpl file
+     */
+    const DEFAULT_TPL_PROPERTY_FILE = 'property';
+
+    /**
+     * Default setter tpl file
+     */
+    const DEFAULT_TPL_SETTER_FILE = 'setter';
+
+    /**
+     * Default getter tpl file
+     */
+    const DEFAULT_TPL_GETTER_FILE = 'getter';
 
     /**
      * @var SchemaData
@@ -45,10 +60,10 @@ class EntityLogic
      */
     public function generate(array $params)
     {
-        list($db, $inc, $exc, $path, $namespace, $driver, $instance, $tablePrefix, $fieldPrefix, $tplFile, $tplDir) = $params;
+        list($db, $inc, $exc, $path, $namespace, $driver, $instance, $tablePrefix, $fieldPrefix, $tplDir, $isForce) = $params;
         $tableSchemas = $this->schemaData->getSchemaTableData($driver, $db, $inc, $exc, $tablePrefix);
         foreach ($tableSchemas as $tableSchema) {
-            $this->generateClass($driver, $db, $instance, $tableSchema, $fieldPrefix, $path, $namespace, $tplFile, $tplDir);
+            $this->generateClass($driver, $db, $instance, $tableSchema, $fieldPrefix, $path, $namespace, $tplDir, $isForce);
         }
     }
 
@@ -60,14 +75,19 @@ class EntityLogic
      * @param string $fieldPrefix
      * @param string $path
      * @param string $namespace
-     * @param string $tplFile
      * @param string $tplDir
+     * @param bool   $isForce
      */
-    private function generateClass(string $driver, string $db, string $instance, array $tableSchema, string $fieldPrefix, string $path, string $namespace, string $tplFile, string $tplDir)
+    private function generateClass(string $driver, string $db, string $instance, array $tableSchema, string $fieldPrefix, string $path, string $namespace, string $tplDir, bool $isForce)
     {
+        $classFile = alias($tplDir).self::DEFAULT_TPL_ENTITY_FILE;
+        if(!file_exists($classFile)){
+            $tplDir = alias('@devtool/res/templates/');
+        }
+
         $mappingClass = $tableSchema['mapping'];
         $config       = [
-            'tplFilename' => $tplFile,
+            'tplFilename' => self::DEFAULT_TPL_ENTITY_FILE,
             'tplDir'      => $tplDir,
             'className'   => $mappingClass,
         ];
@@ -82,7 +102,7 @@ class EntityLogic
         $genProperties = [];
         $useRequired   = false;
         foreach ($columnSchemas as $columnSchema) {
-            list($propertyCode, $required) = $this->generateProperties($columnSchema, $tplDir);
+            list($propertyCode, $required) = $this->generateProperties($columnSchema, $tplDir, $isForce);
             $genProperties[] = $propertyCode;
             if (!empty($required) && !$useRequired) {
                 $useRequired = true;
@@ -115,13 +135,19 @@ class EntityLogic
     /**
      * @param array  $colSchema
      * @param string $tplDir
+     * @param bool   $isForce
      *
      * @return array
      */
-    private function generateProperties(array $colSchema, string $tplDir): array
+    private function generateProperties(array $colSchema, string $tplDir, bool $isForce): array
     {
+        $classFile = alias($tplDir).self::DEFAULT_TPL_PROPERTY_FILE;
+        if(!file_exists($classFile)){
+            $tplDir = alias('@devtool/res/templates/');
+        }
+
         $entityConfig = [
-            'tplFilename' => 'property',
+            'tplFilename' => self::DEFAULT_TPL_PROPERTY_FILE,
             'tplDir'      => $tplDir,
         ];
 
@@ -130,21 +156,22 @@ class EntityLogic
 
         // required
         $isRequired = $colSchema['nullable'] === 'NO' && $colSchema['default'] === null;
-        $required   = !empty($colSchema['key']) ? false : $isRequired;
+        $required   = (!empty($colSchema['key']) || $isForce) ? false : $isRequired;
         $required   = ($required == true) ? '* @Required()' : '';
 
         // default
-        $default = $this->transferDefaultType($colSchema['type'], $colSchema['key'], $colSchema['default']);
+        $default = $this->transferDefaultType($colSchema['phpType'], $colSchema['key'], $colSchema['default']);
         $default = ($default !== null) ? sprintf(', default=%s', $default) : '';
 
-        $data         = [
-            'type'         => $colSchema['phpType'],
-            'propertyName' => $colSchema['mappingVar'],
-            'column'       => $colSchema['name'],
-            'columnType'   => $colSchema['mappingType'],
-            'default'      => $default,
-            'required'     => $required,
-            'id'           => $id,
+        $data = [
+            'type'          => $colSchema['phpType'],
+            'propertyName'  => $colSchema['mappingVar'],
+            'propertyValue' => '',
+            'column'        => $colSchema['name'],
+            'columnType'    => $colSchema['mappingType'],
+            'default'       => $default,
+            'required'      => $required,
+            'id'            => $id,
         ];
         $gen          = new FileGenerator($entityConfig);
         $propertyCode = $gen->render($data);
@@ -160,10 +187,15 @@ class EntityLogic
      */
     private function generateGetters(array $colSchema, string $tplDir): string
     {
+        $classFile = alias($tplDir).self::DEFAULT_TPL_GETTER_FILE;
+        if(!file_exists($classFile)){
+            $tplDir = alias('@devtool/res/templates/');
+        }
+
         $getterName = sprintf('get%s', ucfirst($colSchema['mappingName']));
 
         $config = [
-            'tplFilename' => 'getter',
+            'tplFilename' => self::DEFAULT_TPL_GETTER_FILE,
             'tplDir'      => $tplDir,
         ];
         $data   = [
@@ -185,10 +217,15 @@ class EntityLogic
      */
     private function generateSetters(array $colSchema, string $tplDir): string
     {
+        $classFile = alias($tplDir).self::DEFAULT_TPL_SETTER_FILE;
+        if(!file_exists($classFile)){
+            $tplDir = alias('@devtool/res/templates/');
+        }
+
         $setterName = sprintf('set%s', ucfirst($colSchema['mappingName']));
 
         $config = [
-            'tplFilename' => 'setter',
+            'tplFilename' => self::DEFAULT_TPL_SETTER_FILE,
             'tplDir'      => $tplDir,
         ];
 
@@ -210,16 +247,18 @@ class EntityLogic
      * @param string $primaryKey
      * @param mixed  $default
      *
-     * @return bool|float|int|null|string
+     * @return array
      */
-    private function transferDefaultType(string $type, string $primaryKey, $default)
+    private function transferDefaultType(string $type, string $primaryKey, $default): array
     {
         if (!empty($primaryKey)) {
-            return null;
+            return [null, null];
         }
 
         if ($default === null) {
-            return null;
+            $propertyValue = $this->getDefaultByType($type);
+
+            return [null, $propertyValue];
         }
 
         $default = trim($default);
@@ -236,6 +275,30 @@ class EntityLogic
                 break;
             default:
                 $default = sprintf('"%s"', $default);
+                break;
+        }
+
+        return [$default, $default];
+    }
+
+    /**
+     * @param string $type
+     *
+     * @return float|int|string
+     */
+    private function getDefaultByType(string $type)
+    {
+        $default = '';
+        switch ($type) {
+            case Types::INT:
+            case Types::NUMBER:
+                $default = 0;
+                break;
+            case Types::BOOL:
+                $default = 0;
+                break;
+            case Types::FLOAT:
+                $default = 0.0;
                 break;
         }
 
