@@ -15,6 +15,26 @@ use Swoft\Devtool\Model\Data\SchemaData;
 class EntityLogic
 {
     /**
+     * Default entity path
+     */
+    const DEFAULT_PATH = '@app/Models/Entity';
+
+    /**
+     * Default namespace
+     */
+    const DEFAULT_NAMESPACE = 'App\\Models\\Entity';
+
+    /**
+     * Default driver
+     */
+    const DEFAULT_DRIVER = 'mysql';
+
+    /**
+     * Default tpl file
+     */
+    const DEFAULT_TPL_FILE = 'entity.stub';
+
+    /**
      * @var SchemaData
      * @Inject()
      */
@@ -25,23 +45,25 @@ class EntityLogic
      */
     public function generate(array $params)
     {
-        list($db, $inc, $exc, $path, $driver, $tablePrefix, $fieldPrefix, $tplFile, $tplDir) = $params;
+        list($db, $inc, $exc, $path, $namespace, $driver, $instance, $tablePrefix, $fieldPrefix, $tplFile, $tplDir) = $params;
         $tableSchemas = $this->schemaData->getSchemaTableData($driver, $db, $inc, $exc, $tablePrefix);
         foreach ($tableSchemas as $tableSchema) {
-            $this->generateClass($driver, $db, $tableSchema, $fieldPrefix, $path, $tplFile, $tplDir);
+            $this->generateClass($driver, $db, $instance, $tableSchema, $fieldPrefix, $path, $namespace, $tplFile, $tplDir);
         }
     }
 
     /**
      * @param string $driver
      * @param string $db
+     * @param string $instance
      * @param array  $tableSchema
      * @param string $fieldPrefix
      * @param string $path
+     * @param string $namespace
      * @param string $tplFile
      * @param string $tplDir
      */
-    private function generateClass(string $driver, string $db, array $tableSchema, string $fieldPrefix, string $path, string $tplFile, string $tplDir)
+    private function generateClass(string $driver, string $db, string $instance, array $tableSchema, string $fieldPrefix, string $path, string $namespace, string $tplFile, string $tplDir)
     {
         $mappingClass = $tableSchema['mapping'];
         $config       = [
@@ -75,14 +97,16 @@ class EntityLogic
         $propertyStr = implode("\n", $genProperties);
         $methodStr   = sprintf("%s\n\n%s", $setterStr, $getterStr);
         $usespace    = (!$useRequired) ? '' : 'use Swoft\Db\Bean\Annotation\Required;';
+        $instance    = empty($instance)? '': sprintf('instance="%s"', $instance);
 
         $data = [
             'properties' => $propertyStr,
             'methods'    => $methodStr,
             'tableName'  => $tableSchema['name'],
             'entityName' => $mappingClass,
-            'namespace'  => 'App\\Models\\Entity',
+            'namespace'  => $namespace,
             'usespace'   => $usespace,
+            'instance'   => $instance,
         ];
         $gen  = new FileGenerator($config);
         $gen->renderas($file, $data);

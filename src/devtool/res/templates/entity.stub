@@ -10,7 +10,7 @@ use Swoft\Db\Bean\Annotation\Table;
 {= usespace}
 
 /**
- * @Entity()
+ * @Entity({= instance | raw})
  * @Table(name="{= tableName}")
  */
 class {= entityName} extends Model

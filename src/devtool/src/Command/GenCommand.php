@@ -296,7 +296,9 @@ class GenCommand
      *   -i, --include STRING       Set the included tables, `,` symbol is used  to separated by multiple tables. default is: <info>all tables</info>
      *   -e, --exclude STRING       Set the excluded tables, `,` symbol is used  to separated by multiple tables. default is: <info>empty</info>
      *   -p, --path STRING          Specified entity generation path, default is: <info>@app/Models/Entity</info>
+     *   -n, --namespace STRING     Specified entity generation namespace, default is: <info>App\\Models\\Entity</info>
      *   --driver STRING            Specify database driver(mysql/pgsql/mongodb), default is: <info>mysql</info>
+     *   --instance STRING          Specify database instance, default is: <info>default</info>
      *   --table-prefix STRING      Specify the table prefix that needs to be removed, default is: <info>empty</info>
      *   --field-prefix STRING      Specify the field prefix that needs to be removed, default is: <info>empty</info>
      *   --tpl-file STRING          The template file name. default is: <info>entity.stub</info>
@@ -304,31 +306,37 @@ class GenCommand
      * @Example
      *   <info>{fullCommand} -d test</info>     Gen DemoProcess class to `@app/Models/Entity`
      *
-     * @param Input $in
-     * @param Output $out
+     * @param Input  $input
+     * @param Output $output
      *
-     * @return int
      * @throws \RuntimeException
      * @throws \InvalidArgumentException
      * @throws \Leuffen\TextTemplate\TemplateParsingException
      */
-    public function entity(Input $in, Output $out)
+    public function entity(Input $input, Output $output)
     {
-        $params = [
-            'test',
-            '',
-            '',
-            '@app/Models/Entity',
-            'mysql',
-            '',
-            '',
-            'entity',
-            $this->defaultTplPath
-        ];
+        $db = $input->sameArg(['d', 'database']);
+        if ($db === null) {
+            $output->writeln('The database must be set up by -d or --database !');
 
-        /* @var EntityLogic $logic*/
+            return;
+        }
+
+        $inc = $input->sameArg(['i', 'include'], '');
+        $exc = $input->sameArg(['e', 'exclude'], '');
+        $path = $input->sameArg(['p', 'path'], EntityLogic::DEFAULT_PATH);
+        $namespace = $input->sameArg(['n', 'namespace'], EntityLogic::DEFAULT_NAMESPACE);
+        $driver = $input->getOpt('driver', EntityLogic::DEFAULT_DRIVER);
+        $instance = $input->getOpt('instance', '');
+        $tablePrefix = $input->getOpt('table-prefix', '');
+        $fieldPrefix = $input->getOpt('field-prefix', '');
+        $tplFile = $input->getOpt('tpl-file', EntityLogic::DEFAULT_TPL_FILE);
+        $tplDir = $input->getOpt('tpl-dir', $this->defaultTplPath);
+
+
+        /* @var EntityLogic $logic */
         $logic = bean(EntityLogic::class);
-        $logic->generate($params);
+        $logic->generate([$db, $inc, $exc, $path, $namespace, $driver, $instance, $tablePrefix, $fieldPrefix, $tplFile, $tplDir]);
     }
 
     /**
