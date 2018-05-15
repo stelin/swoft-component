@@ -138,7 +138,7 @@ class RequestContext
      * Update context data by key
      *
      * @param string $key
-     * @param mixed  $val
+     * @param mixed $val
      */
     public static function setContextDataByKey(string $key, $val)
     {
@@ -171,7 +171,7 @@ class RequestContext
      *
      * @param string $key
      * @param string $child
-     * @param mixed  $val
+     * @param mixed $val
      */
     public static function setContextDataByChildKey(string $key, string $child, $val)
     {
@@ -184,7 +184,7 @@ class RequestContext
      *
      * @param string $key
      * @param string $child
-     * @param mixed  $default
+     * @param mixed $default
      * @return mixed
      */
     public static function getContextDataByChildKey(string $key, string $child, $default = null)
@@ -230,7 +230,7 @@ class RequestContext
     {
         $contextData = self::getCoroutineContext(self::DATA_KEY);
 
-        return $contextData['spanid'] ? (int)$contextData['spanid'] : 0;
+        return (int)($contextData['spanid'] ?? 0);
     }
 
     /**
@@ -253,7 +253,7 @@ class RequestContext
     private static function getCoroutineContext(string $key)
     {
         $coroutineId = self::getCoroutineId();
-        if (! isset(self::$context[$coroutineId])) {
+        if (!isset(self::$context[$coroutineId])) {
             return null;
         }
 
